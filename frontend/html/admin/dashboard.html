@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - Campus Pulse</title>
+  <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <h1>🎓 Campus Pulse - Admin Panel</h1>
+    <div>
+      <a href="../dashboard.html">Dashboard</a>
+      <a href="../announcements/index.html">Announcements</a>
+      <a href="../lost-found/index.html">Lost & Found</a>
+      <a href="#" id="logoutBtn">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="card">
+      <h2>⚙️ Administrator Controls</h2>
+      <p>Manage users, announcements, and lost & found reports.</p>
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="dashboard-card" onclick="showSection('announcements')">
+        <div class="icon">📢</div>
+        <h3>Manage Announcements</h3>
+        <p>Create, edit, or delete campus announcements</p>
+      </div>
+
+      <div class="dashboard-card" onclick="showSection('users')">
+        <div class="icon">👥</div>
+        <h3>Manage Users</h3>
+        <p>View and manage student accounts</p>
+      </div>
+
+      <div class="dashboard-card" onclick="showSection('reports')">
+        <div class="icon">📋</div>
+        <h3>Manage Reports</h3>
+        <p>Review and moderate lost & found reports</p>
+      </div>
+    </div>
+
+    <!-- Announcements Section -->
+    <div id="announcementsSection" class="card" style="display: none;">
+      <h3>Create New Announcement</h3>
+      <form id="announcementForm">
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" id="annTitle" required>
+        </div>
+        <div class="form-group">
+          <label>Content</label>
+          <textarea id="annContent" rows="3" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Post Announcement</button>
+      </form>
+      
+      <h3 style="margin-top: 30px;">Existing Announcements</h3>
+      <div id="adminAnnouncementsList"></div>
+    </div>
+
+    <!-- Users Section -->
+    <div id="usersSection" class="card" style="display: none;">
+      <h3>Registered Users</h3>
+      <div id="usersList"></div>
+    </div>
+
+    <!-- Reports Section -->
+    <div id="reportsSection" class="card" style="display: none;">
+      <h3>Lost & Found Reports</h3>
+      <div id="reportsList"></div>
+    </div>
+  </div>
+
+  <script>
+    // Check admin access
+    const userRole = sessionStorage.getItem('userRole');
+    if (!userRole || userRole !== 'admin') {
+      window.location.href = '../dashboard.html';
+    }
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', function(e) {
+      e.preventDefault();
+      sessionStorage.removeItem('authToken');
+      sessionStorage.removeItem('userRole');
+      window.location.href = '../index.html';
+    });
+
+    function showSection(section) {
+      document.getElementById('announcementsSection').style.display = 'none';
+      document.getElementById('usersSection').style.display = 'none';
+      document.getElementById('reportsSection').style.display = 'none';
+      
+      if (section === 'announcements') {
+        document.getElementById('announcementsSection').style.display = 'block';
+        loadAnnouncements();
+      } else if (section === 'users') {
+        document.getElementById('usersSection').style.display = 'block';
+        loadUsers();
+      } else if (section === 'reports') {
+        document.getElementById('reportsSection').style.display = 'block';
+        loadReports();
+      }
+    }
+
+    function loadAnnouncements() {
+      const announcements = JSON.parse(localStorage.getItem('adminAnnouncements')) || [];
+      const container = document.getElementById('adminAnnouncementsList');
+      
+      if (announcements.length === 0) {
+        container.innerHTML = '<p>No announcements yet.</p>';
+        return;
+      }
+      
+      container.innerHTML = announcements.map((ann, index) => `
+        <div class="announcement-card">
+          <h3>${ann.title}</h3>
+          <p>${ann.content}</p>
+          <button onclick="deleteAnnouncement(${index})" class="btn btn-danger" style="margin-top: 10px;">Delete</button>
+        </div>
+      `).join('');
+    }
+
+    function deleteAnnouncement(index) {
+      let announcements = JSON.parse(localStorage.getItem('adminAnnouncements')) || [];
+      announcements.splice(index, 1);
+      localStorage.setItem('adminAnnouncements', JSON.stringify(announcements));
+      loadAnnouncements();
+    }
+
+    function loadUsers() {
+      // Demo users
+      const users = [
+        { email: 'admin@unima.ac.mw', role: 'admin', registered: '2026-04-01' },
+        { email: 'student1@unima.ac.mw', role: 'student', registered: '2026-04-02' },
+        { email: 'student2@unima.ac.mw', role: 'student', registered: '2026-04-03' }
+      ];
+      
+      const container = document.getElementById('usersList');
+      container.innerHTML = `
+        <table>
+          <thead>
+            <tr><th>Email</th><th>Role</th><th>Registered</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            ${users.map(user => `
+              <tr>
+                <td>${user.email}</td>
+                <td>${user.role}</td>
+                <td>${user.registered}</td>
+                <td><button class="btn btn-danger" style="padding: 5px 10px;">Suspend</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function loadReports() {
+      const reports = JSON.parse(localStorage.getItem('lostFoundItems')) || [];
+      const container = document.getElementById('reportsList');
+      
+      if (reports.length === 0) {
+        container.innerHTML = '<p>No reports yet.</p>';
+        return;
+      }
+      
+      container.innerHTML = reports.map((report, index) => `
+        <div class="item-card">
+          <h3>${report.title}</h3>
+          <p><strong>Type:</strong> ${report.type}</p>
+          <p><strong>Category:</strong> ${report.category}</p>
+          <p><strong>Location:</strong> ${report.location}</p>
+          <p>${report.description}</p>
+          <button onclick="deleteReport(${index})" class="btn btn-danger" style="margin-top: 10px;">Remove Report</button>
+        </div>
+      `).join('');
+    }
+
+    function deleteReport(index) {
+      let reports = JSON.parse(localStorage.getItem('lostFoundItems')) || [];
+      reports.splice(index, 1);
+      localStorage.setItem('lostFoundItems', JSON.stringify(reports));
+      loadReports();
+    }
+
+    document.getElementById('announcementForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const title = document.getElementById('annTitle').value;
+      const content = document.getElementById('annContent').value;
+      
+      let announcements = JSON.parse(localStorage.getItem('adminAnnouncements')) || [];
+      announcements.unshift({
+        title: title,
+        content: content,
+        date: new Date().toISOString(),
+        author: 'Administrator'
+      });
+      
+      localStorage.setItem('adminAnnouncements', JSON.stringify(announcements));
+      
+      document.getElementById('annTitle').value = '';
+      document.getElementById('annContent').value = '';
+      
+      loadAnnouncements();
+      alert('Announcement posted!');
+    });
+  </script>
+</body>
+</html>

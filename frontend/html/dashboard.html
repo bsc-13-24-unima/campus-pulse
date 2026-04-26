@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Campus Pulse</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <h1>🎓 Campus Pulse</h1>
+    <div>
+      <a href="lost-found/index.html">Lost & Found</a>
+      <a href="announcements/index.html">Announcements</a>
+      <a href="users/profile.html">Profile</a>
+      <a href="#" id="logoutBtn">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="card">
+      <h2 id="welcomeMsg">Welcome back!</h2>
+      <p style="color:#777">What would you like to do today?</p>
+    </div>
+
+    <div class="dashboard-grid">
+      <a href="lost-found/index.html" class="dashboard-card">
+        <div class="icon">🔍</div>
+        <h3>Lost & Found</h3>
+        <p>Post lost items or claim found items on campus</p>
+      </a>
+
+      <a href="announcements/index.html" class="dashboard-card">
+        <div class="icon">📢</div>
+        <h3>Announcements</h3>
+        <p>View official campus announcements and notices</p>
+      </a>
+
+      <a href="users/profile.html" class="dashboard-card">
+        <div class="icon">👤</div>
+        <h3>My Profile</h3>
+        <p>View and update your account information</p>
+      </a>
+    </div>
+  </div>
+
+  <script>
+    // Check if user is logged in
+    const token = sessionStorage.getItem('authToken');
+    if (!token) {
+      window.location.href = 'index.html';
+    }
+
+    // Display welcome message
+    const userEmail = sessionStorage.getItem('userEmail');
+    if (userEmail) {
+      const namePart = userEmail.split('@')[0];
+      document.getElementById('welcomeMsg').textContent = `Welcome back, ${namePart}!`;
+    }
+
+    // Check if user is admin (you can customize this later)
+    const userRole = sessionStorage.getItem('userRole');
+    if (userRole === 'admin') {
+      const grid = document.querySelector('.dashboard-grid');
+      const adminCard = document.createElement('a');
+      adminCard.href = 'admin/dashboard.html';
+      adminCard.className = 'dashboard-card';
+      adminCard.innerHTML = '<div class="icon">⚙️</div><h3>Admin Panel</h3><p>Manage users, reports, and announcements</p>';
+      grid.appendChild(adminCard);
+    }
+
+    // Logout functionality
+    document.getElementById('logoutBtn').addEventListener('click', function(e) {
+      e.preventDefault();
+      sessionStorage.removeItem('authToken');
+      sessionStorage.removeItem('userEmail');
+      sessionStorage.removeItem('userRole');
+      window.location.href = 'index.html';
+    });
+  </script>
+</body>
+</html>
