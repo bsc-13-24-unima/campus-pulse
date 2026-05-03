@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lost & Found - Campus Pulse</title>
+  <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <h1>🎓 Campus Pulse</h1>
+    <div>
+      <a href="../dashboard.html">Dashboard</a>
+      <a href="../announcements/index.html">Announcements</a>
+      <a href="index.html" style="color: white;">Lost & Found</a>
+      <a href="#" id="logoutBtn">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="card">
+      <h2>🔍 Lost & Found Board</h2>
+      <p>Report lost items or check if something you lost has been found.</p>
+    </div>
+
+    <div class="card">
+      <h3>📝 Report an Item</h3>
+      <form id="reportForm">
+        <div class="form-group">
+          <label>Item Type</label>
+          <select id="itemType" required>
+            <option value="lost">I Lost Something</option>
+            <option value="found">I Found Something</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" id="title" placeholder="e.g., Black Laptop Bag" required>
+        </div>
+        
+        <div class="form-group">
+          <label>Category</label>
+          <select id="category" required>
+            <option value="">Select Category</option>
+            <option value="Electronics">Electronics</option>
+            <option value="Clothing">Clothing</option>
+            <option value="Books">Books</option>
+            <option value="ID Cards">ID Cards</option>
+            <option value="Keys">Keys</option>
+            <option value="Bags">Bags</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Location</label>
+          <input type="text" id="location" placeholder="Where was it lost/found?" required>
+        </div>
+        
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="description" rows="3" placeholder="Provide more details..." required></textarea>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Submit Report</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3>📋 Recent Reports</h3>
+      <div class="filter-bar">
+        <input type="text" id="searchInput" placeholder="Search items..." style="flex: 1;">
+        <select id="filterCategory">
+          <option value="">All Categories</option>
+          <option value="Electronics">Electronics</option>
+          <option value="Clothing">Clothing</option>
+          <option value="Books">Books</option>
+          <option value="ID Cards">ID Cards</option>
+          <option value="Keys">Keys</option>
+          <option value="Bags">Bags</option>
+          <option value="Other">Other</option>
+        </select>
+        <select id="filterType">
+          <option value="">All Items</option>
+          <option value="lost">Lost Items</option>
+          <option value="found">Found Items</option>
+        </select>
+      </div>
+      <div id="itemsList">
+        <p style="color: #777; text-align: center;">No items reported yet. Be the first to report!</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Check login
+    const token = sessionStorage.getItem('authToken');
+    if (!token) {
+      window.location.href = '../index.html';
+    }
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', function(e) {
+      e.preventDefault();
+      sessionStorage.removeItem('authToken');
+      window.location.href = '../index.html';
+    });
+
+    // Sample data for demo
+    let items = JSON.parse(localStorage.getItem('lostFoundItems')) || [];
+
+    function displayItems() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const categoryFilter = document.getElementById('filterCategory').value;
+      const typeFilter = document.getElementById('filterType').value;
+      
+      let filtered = items.filter(item => {
+        const matchesSearch = item.title.toLowerCase().includes(searchTerm) || 
+                              item.description.toLowerCase().includes(searchTerm);
+        const matchesCategory = !categoryFilter || item.category === categoryFilter;
+        const matchesType = !typeFilter || item.type === typeFilter;
+        return matchesSearch && matchesCategory && matchesType;
+      });
+      
+      const container = document.getElementById('itemsList');
+      
+      if (filtered.length === 0) {
+        container.innerHTML = '<p style="color: #777; text-align: center;">No items found.</p>';
+        return;
+      }
+      
+      container.innerHTML = filtered.map(item => `
+        <div class="item-card">
+          <span class="badge ${item.type === 'lost' ? 'badge-lost' : 'badge-found'}">
+            ${item.type === 'lost' ? '🔴 LOST' : '🟢 FOUND'}
+          </span>
+          <h3>${item.title}</h3>
+          <p><strong>Category:</strong> ${item.category}</p>
+          <p><strong>Location:</strong> ${item.location}</p>
+          <p>${item.description.substring(0, 100)}...</p>
+          <p style="font-size: 12px; color: #999; margin-top: 10px;">
+            Posted: ${new Date(item.date).toLocaleDateString()}
+          </p>
+          <button onclick="claimItem('${item.id}')" class="btn btn-secondary" style="margin-top: 10px;">
+            ${item.type === 'found' ? 'Claim This Item' : 'I Have Info'}
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function claimItem(id) {
+      alert('Claim functionality will be implemented when backend is ready.\n\nThe owner will be notified.');
+    }
+
+    document.getElementById('reportForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const newItem = {
+        id: Date.now().toString(),
+        type: document.getElementById('itemType').value,
+        title: document.getElementById('title').value,
+        category: document.getElementById('category').value,
+        location: document.getElementById('location').value,
+        description: document.getElementById('description').value,
+        date: new Date().toISOString(),
+        postedBy: sessionStorage.getItem('userEmail') || 'student@unima.ac.mw'
+      };
+      
+      items.unshift(newItem);
+      localStorage.setItem('lostFoundItems', JSON.stringify(items));
+      
+      document.getElementById('reportForm').reset();
+      displayItems();
+      alert('Item reported successfully!');
+    });
+
+    document.getElementById('searchInput').addEventListener('input', displayItems);
+    document.getElementById('filterCategory').addEventListener('change', displayItems);
+    document.getElementById('filterType').addEventListener('change', displayItems);
+
+    displayItems();
+  </script>
+</body>
+</html>
