@@ -18,6 +18,33 @@
   </nav>
 
   <div class="container">
+
+    <!-- Post form (only shown to admin/staff via JS) -->
+    <div id="postFormContainer" style="display:none;">
+      <div class="card">
+        <h2>Post New Announcement</h2>
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" id="announcementTitle" placeholder="Announcement title">
+        </div>
+        <div class="form-group">
+          <label>Content</label>
+          <textarea id="announcementContent" rows="5" placeholder="Write your announcement here..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Target Audience</label>
+          <select id="announcementAudience">
+            <option value="all">Everyone</option>
+            <option value="students">Students Only</option>
+            <option value="staff">Staff Only</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" id="postAnnouncementBtn" onclick="postAnnouncement()">Post Announcement</button>
+        <div id="postError" style="display:none;color:red;margin-top:8px;"></div>
+        <div id="postSuccess" style="display:none;color:green;margin-top:8px;"></div>
+      </div>
+    </div>
+
     <div class="card">
       <h2>📢 Campus Announcements</h2>
       <p>Official announcements from university administration and canteen.</p>
@@ -26,69 +53,121 @@
     <div id="announcementsList">
       <!-- Announcements will appear here -->
     </div>
+
   </div>
 
   <script>
-    // Check login
+    const BASE_URL = 'http://localhost:3000';
     const token = sessionStorage.getItem('authToken');
+    const userRole = sessionStorage.getItem('userRole');
+
     if (!token) {
       window.location.href = '../index.html';
     }
 
-    // Logout
+    if (userRole === 'admin' || userRole === 'staff') {
+      document.getElementById('postFormContainer').style.display = 'block';
+    }
+
+    async function loadAnnouncements() {
+      const container = document.getElementById('announcementsList');
+      try {
+        const response = await fetch(`${BASE_URL}/announcements`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.status === 401) {
+          sessionStorage.removeItem('authToken');
+          window.location.href = '../index.html';
+          return;
+        }
+
+        const announcements = await response.json();
+
+        if (!announcements.length) {
+          container.innerHTML = '<p style="color:#777;text-align:center;padding:40px;">No announcements yet.</p>';
+          return;
+        }
+
+        container.innerHTML = announcements.map(a => `
+          <div class="announcement-card">
+            <h3>${escapeHtml(a.title)}</h3>
+            <p>${escapeHtml(a.content)}</p>
+            <div class="announcement-meta">
+              Posted by ${escapeHtml(a.postedBy.fullName)} · ${new Date(a.createdAt).toLocaleDateString()} · For: ${escapeHtml(a.targetAudience)}
+            </div>
+          </div>
+        `).join('');
+
+      } catch (error) {
+        container.innerHTML = '<p style="color:#c62828;">Failed to load announcements.</p>';
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.appendChild(document.createTextNode(text || ''));
+      return div.innerHTML;
+    }
+
+    async function postAnnouncement() {
+      const title = document.getElementById('announcementTitle').value.trim();
+      const content = document.getElementById('announcementContent').value.trim();
+      const targetAudience = document.getElementById('announcementAudience').value;
+      const errorDiv = document.getElementById('postError');
+      const successDiv = document.getElementById('postSuccess');
+      const btn = document.getElementById('postAnnouncementBtn');
+
+      errorDiv.style.display = 'none';
+      successDiv.style.display = 'none';
+
+      if (!title || !content) {
+        errorDiv.textContent = 'Please fill in both the title and content.';
+        errorDiv.style.display = 'block';
+        return;
+      }
+
+      btn.textContent = 'Posting...';
+      btn.disabled = true;
+
+      try {
+        const response = await fetch(`${BASE_URL}/announcements`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ title, content, targetAudience })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          successDiv.textContent = 'Announcement posted successfully!';
+          successDiv.style.display = 'block';
+          document.getElementById('announcementTitle').value = '';
+          document.getElementById('announcementContent').value = '';
+          loadAnnouncements();
+        } else {
+          errorDiv.textContent = data.message || 'Failed to post announcement.';
+          errorDiv.style.display = 'block';
+        }
+      } catch (error) {
+        errorDiv.textContent = 'Connection error. Please try again.';
+        errorDiv.style.display = 'block';
+      }
+
+      btn.textContent = 'Post Announcement';
+      btn.disabled = false;
+    }
+
     document.getElementById('logoutBtn').addEventListener('click', function(e) {
       e.preventDefault();
       sessionStorage.removeItem('authToken');
       window.location.href = '../index.html';
     });
 
-    // Sample announcements for demo
-    let announcements = [
-      {
-        id: 1,
-        title: "📚 Library Extended Hours",
-        content: "The university library will remain open until 10 PM during exam week (May 10-20).",
-        date: "2026-04-23",
-        author: "Administration"
-      },
-      {
-        id: 2,
-        title: "🍽️ Canteen Special Menu Today",
-        content: "Today's special: Grilled Chicken with Rice - Only 2500 MWK! Available until 3 PM.",
-        date: "2026-04-23",
-        author: "Canteen Staff"
-      },
-      {
-        id: 3,
-        title: "🔧 Maintenance Notice",
-        content: "The Science Block will have power maintenance on Saturday, April 25th from 8 AM to 12 PM.",
-        date: "2026-04-22",
-        author: "Facilities"
-      },
-      {
-        id: 4,
-        title: "🎓 Graduation Ceremony",
-        content: "The 2026 Graduation Ceremony will be held on June 15th. Caps and gowns available for pickup from May 1st.",
-        date: "2026-04-21",
-        author: "Academic Office"
-      }
-    ];
-
-    function displayAnnouncements() {
-      const container = document.getElementById('announcementsList');
-      
-      container.innerHTML = announcements.map(announcement => `
-        <div class="announcement-card">
-          <h3>${announcement.title}</h3>
-          <p>${announcement.content}</p>
-          <div class="announcement-meta">
-            Posted by ${announcement.author} on ${new Date(announcement.date).toLocaleDateString()}
-          </div>
-        </div>
-      `).join('');
-    }
-
-    displayAnnouncements();
+    loadAnnouncements();
   </script>
 </body>
 </html>
