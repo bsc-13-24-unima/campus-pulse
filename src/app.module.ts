@@ -13,9 +13,9 @@ import { AuthModule } from './modules/auth/auth.module';
       type: 'oracle',
       host: 'localhost',
       port: 1521,
-      username: 'CAMPUS_PULSE_USER',
+      username: 'C##CAMPUS_PULSE_USER',
       password: 'zaithwa28',
-      serviceName: 'XEPDB1',
+      sid: 'XE',
 
       autoLoadEntities: true,
       synchronize: false, // keep this FALSE since you created tables manually
