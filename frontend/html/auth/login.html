@@ -53,17 +53,30 @@
       // For now, demo login - will be replaced when backend is ready
       // This is a TEMPORARY solution for testing the frontend
       
-      if (email.includes('admin')) {
-        sessionStorage.setItem('authToken', 'demo-admin-token');
-        sessionStorage.setItem('userEmail', email);
-        sessionStorage.setItem('userRole', 'admin');
-      } else {
-        sessionStorage.setItem('authToken', 'demo-student-token');
-        sessionStorage.setItem('userEmail', email);
-        sessionStorage.setItem('userRole', 'student');
-      }
-      
-      window.location.href = '../dashboard.html';
+      const BASE_URL = 'http://10.100.199.198:3000';
+
+try {
+  const response = await fetch(`${BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+  
+  const data = await response.json();
+  
+  if (response.ok) {
+    sessionStorage.setItem('authToken', data.token);
+    sessionStorage.setItem('userEmail', email);
+    sessionStorage.setItem('userRole', data.role || 'student');
+    window.location.href = '../dashboard.html';
+  } else {
+    errorDiv.textContent = data.message || 'Login failed';
+    errorDiv.style.display = 'block';
+  }
+} catch (error) {
+  errorDiv.textContent = 'Backend not reachable';
+  errorDiv.style.display = 'block';
+}
     });
   </script>
 </body>
