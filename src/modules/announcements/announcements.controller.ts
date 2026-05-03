@@ -1,18 +1,17 @@
 import { Controller, Get, Post, Body } from '@nestjs/common';
+import { AnnouncementsService } from './announcements.service';
 
 @Controller('announcements')
 export class AnnouncementsController {
+  constructor(private readonly announcementsService: AnnouncementsService) {}
 
   @Get()
-  findAll() {
-    return [];
+  getAll() {
+    return this.announcementsService.getAll();
   }
 
   @Post()
   create(@Body() body: any) {
-    return {
-      message: 'Announcement created',
-      data: body
-    };
+    return this.announcementsService.create(body);
   }
 }
