@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Announcements - Campus Pulse</title>
+  <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <h1>🎓 Campus Pulse</h1>
+    <div>
+      <a href="../dashboard.html">Dashboard</a>
+      <a href="index.html" style="color: white;">Announcements</a>
+      <a href="../lost-found/index.html">Lost & Found</a>
+      <a href="#" id="logoutBtn">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="card">
+      <h2>📢 Campus Announcements</h2>
+      <p>Official announcements from university administration and canteen.</p>
+    </div>
+
+    <div id="announcementsList">
+      <!-- Announcements will appear here -->
+    </div>
+  </div>
+
+  <script>
+    // Check login
+    const token = sessionStorage.getItem('authToken');
+    if (!token) {
+      window.location.href = '../index.html';
+    }
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', function(e) {
+      e.preventDefault();
+      sessionStorage.removeItem('authToken');
+      window.location.href = '../index.html';
+    });
+
+    // Sample announcements for demo
+    let announcements = [
+      {
+        id: 1,
+        title: "📚 Library Extended Hours",
+        content: "The university library will remain open until 10 PM during exam week (May 10-20).",
+        date: "2026-04-23",
+        author: "Administration"
+      },
+      {
+        id: 2,
+        title: "🍽️ Canteen Special Menu Today",
+        content: "Today's special: Grilled Chicken with Rice - Only 2500 MWK! Available until 3 PM.",
+        date: "2026-04-23",
+        author: "Canteen Staff"
+      },
+      {
+        id: 3,
+        title: "🔧 Maintenance Notice",
+        content: "The Science Block will have power maintenance on Saturday, April 25th from 8 AM to 12 PM.",
+        date: "2026-04-22",
+        author: "Facilities"
+      },
+      {
+        id: 4,
+        title: "🎓 Graduation Ceremony",
+        content: "The 2026 Graduation Ceremony will be held on June 15th. Caps and gowns available for pickup from May 1st.",
+        date: "2026-04-21",
+        author: "Academic Office"
+      }
+    ];
+
+    function displayAnnouncements() {
+      const container = document.getElementById('announcementsList');
+      
+      container.innerHTML = announcements.map(announcement => `
+        <div class="announcement-card">
+          <h3>${announcement.title}</h3>
+          <p>${announcement.content}</p>
+          <div class="announcement-meta">
+            Posted by ${announcement.author} on ${new Date(announcement.date).toLocaleDateString()}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    displayAnnouncements();
+  </script>
+</body>
+</html>

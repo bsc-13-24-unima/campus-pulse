@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile - Campus Pulse</title>
+  <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <h1>🎓 Campus Pulse</h1>
+    <div>
+      <a href="../dashboard.html">Dashboard</a>
+      <a href="../announcements/index.html">Announcements</a>
+      <a href="../lost-found/index.html">Lost & Found</a>
+      <a href="#" id="logoutBtn">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="card">
+      <h2>👤 My Profile</h2>
+      
+      <form id="profileForm">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="fullName" placeholder="John Doe" required>
+        </div>
+        
+        <div class="form-group">
+          <label>University Email</label>
+          <input type="email" id="email" readonly style="background: #f5f5f5;">
+        </div>
+        
+        <div class="form-group">
+          <label>Student ID</label>
+          <input type="text" id="studentId" readonly style="background: #f5f5f5;">
+        </div>
+        
+        <div class="form-group">
+          <label>Faculty</label>
+          <select id="faculty">
+            <option value="">Select Faculty</option>
+            <option value="Computing">Faculty of Computing</option>
+            <option value="Engineering">Faculty of Engineering</option>
+            <option value="Business">Faculty of Business</option>
+            <option value="Science">Faculty of Science</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Year of Study</label>
+          <select id="year">
+            <option value="">Select Year</option>
+            <option value="1">Year 1</option>
+            <option value="2">Year 2</option>
+            <option value="3">Year 3</option>
+            <option value="4">Year 4</option>
+          </select>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Update Profile</button>
+        
+        <div id="successMsg" class="success-message"></div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Check login
+    const token = sessionStorage.getItem('authToken');
+    if (!token) {
+      window.location.href = '../index.html';
+    }
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', function(e) {
+      e.preventDefault();
+      sessionStorage.removeItem('authToken');
+      window.location.href = '../index.html';
+    });
+
+    // Load profile data from localStorage (demo)
+    const userEmail = sessionStorage.getItem('userEmail') || 'student@unima.ac.mw';
+    document.getElementById('email').value = userEmail;
+    
+    // Load saved profile if exists
+    const savedProfile = JSON.parse(localStorage.getItem('userProfile')) || {};
+    if (savedProfile.fullName) {
+      document.getElementById('fullName').value = savedProfile.fullName;
+      document.getElementById('studentId').value = savedProfile.studentId || '';
+      document.getElementById('faculty').value = savedProfile.faculty || '';
+      document.getElementById('year').value = savedProfile.year || '';
+    }
+
+    document.getElementById('profileForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const profile = {
+        fullName: document.getElementById('fullName').value,
+        email: document.getElementById('email').value,
+        studentId: document.getElementById('studentId').value,
+        faculty: document.getElementById('faculty').value,
+        year: document.getElementById('year').value
+      };
+      
+      localStorage.setItem('userProfile', JSON.stringify(profile));
+      
+      const successDiv = document.getElementById('successMsg');
+      successDiv.textContent = 'Profile updated successfully!';
+      successDiv.style.display = 'block';
+      
+      setTimeout(() => {
+        successDiv.style.display = 'none';
+      }, 3000);
+    });
+  </script>
+</body>
+</html>
