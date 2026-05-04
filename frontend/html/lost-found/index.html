@@ -5,6 +5,152 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lost & Found - Campus Pulse</title>
   <link rel="stylesheet" href="../../css/style.css">
+  <style>
+    /* Additional modern styles */
+    .filter-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .filter-bar input, .filter-bar select {
+      padding: 12px 16px;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      font-size: 14px;
+      background: white;
+      transition: all 0.2s;
+    }
+    .filter-bar input:focus, .filter-bar select:focus {
+      outline: none;
+      border-color: #1a237e;
+      box-shadow: 0 0 0 3px rgba(26,35,126,0.1);
+    }
+    .items-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 24px;
+    }
+    .item-card-modern {
+      background: white;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      transition: all 0.3s ease;
+      border: 1px solid #f0f0f0;
+    }
+    .item-card-modern:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.15);
+    }
+    .item-header {
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .badge-modern {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 30px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .badge-lost-modern {
+      background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+      color: white;
+    }
+    .badge-found-modern {
+      background: linear-gradient(135deg, #51cf66, #40c057);
+      color: white;
+    }
+    .item-category {
+      background: #f0f2f5;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      color: #555;
+    }
+    .item-body {
+      padding: 20px;
+    }
+    .item-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1a237e;
+      margin-bottom: 12px;
+    }
+    .item-detail {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 14px;
+      color: #666;
+    }
+    .item-detail-icon {
+      font-size: 16px;
+    }
+    .item-description {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 12px;
+      margin: 12px 0;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #555;
+    }
+    .item-footer {
+      padding: 16px 20px;
+      background: #fafbfc;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid #f0f0f0;
+    }
+    .item-date {
+      font-size: 11px;
+      color: #999;
+    }
+    .btn-claim {
+      background: linear-gradient(135deg, #1a237e, #283593);
+      color: white;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 25px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-claim:hover {
+      transform: scale(1.02);
+      box-shadow: 0 4px 12px rgba(26,35,126,0.3);
+    }
+    .form-card {
+      background: linear-gradient(135deg, #f8f9ff, #ffffff);
+      border: 1px solid #e8eaff;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      background: white;
+      border-radius: 20px;
+    }
+    .empty-state-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+    .empty-state h3 {
+      color: #1a237e;
+      margin-bottom: 8px;
+    }
+    .empty-state p {
+      color: #777;
+    }
+  </style>
 </head>
 <body>
   <nav class="navbar">
@@ -18,96 +164,97 @@
   </nav>
 
   <div class="container">
-    <div class="card">
-      <h2>🔍 Lost & Found Board</h2>
-      <p>Report lost items or check if something you lost has been found.</p>
-    </div>
-
-    <div class="card">
-      <h3>📝 Report an Item</h3>
+    <div class="card form-card">
+      <h2>🔍 Report Lost or Found Item</h2>
+      <p style="color:#666; margin-bottom:24px;">Help your fellow students by reporting lost or found items on campus.</p>
+      
       <form id="reportForm">
         <div class="form-group">
           <label>Item Type</label>
-          <select id="itemType" required>
-            <option value="lost">I Lost Something</option>
-            <option value="found">I Found Something</option>
+          <select id="itemType" required style="padding: 12px;">
+            <option value="lost">📌 I Lost Something</option>
+            <option value="found">✅ I Found Something</option>
           </select>
         </div>
         
         <div class="form-group">
           <label>Title</label>
-          <input type="text" id="title" placeholder="e.g., Black Laptop Bag" required>
+          <input type="text" id="title" placeholder="e.g., Black Laptop Bag, iPhone 13..." required>
         </div>
         
         <div class="form-group">
           <label>Category</label>
           <select id="category" required>
             <option value="">Select Category</option>
-            <option value="Electronics">Electronics</option>
-            <option value="Clothing">Clothing</option>
-            <option value="Books">Books</option>
-            <option value="ID Cards">ID Cards</option>
-            <option value="Keys">Keys</option>
-            <option value="Bags">Bags</option>
-            <option value="Other">Other</option>
+            <option value="Electronics">📱 Electronics</option>
+            <option value="Clothing">👕 Clothing</option>
+            <option value="Books">📚 Books</option>
+            <option value="ID Cards">🪪 ID Cards</option>
+            <option value="Keys">🔑 Keys</option>
+            <option value="Bags">🎒 Bags</option>
+            <option value="Other">📦 Other</option>
           </select>
         </div>
         
         <div class="form-group">
           <label>Location</label>
-          <input type="text" id="location" placeholder="Where was it lost/found?" required>
+          <input type="text" id="location" placeholder="Where was it lost/found? (e.g., Library, Great Hall, CS Lab)" required>
         </div>
         
         <div class="form-group">
           <label>Description</label>
-          <textarea id="description" rows="3" placeholder="Provide more details..." required></textarea>
+          <textarea id="description" rows="3" placeholder="Provide more details that could help identify the item..." required></textarea>
         </div>
         
-        <button type="submit" class="btn btn-primary">Submit Report</button>
+        <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #1a237e, #283593); border-radius: 30px; padding: 12px 28px;">
+          📢 Submit Report
+        </button>
       </form>
     </div>
 
     <div class="card">
-      <h3>📋 Recent Reports</h3>
+      <h2>📋 Recent Reports</h2>
       <div class="filter-bar">
-        <input type="text" id="searchInput" placeholder="Search items..." style="flex: 1;">
+        <input type="text" id="searchInput" placeholder="🔍 Search items..." style="flex: 1;">
         <select id="filterCategory">
           <option value="">All Categories</option>
-          <option value="Electronics">Electronics</option>
-          <option value="Clothing">Clothing</option>
-          <option value="Books">Books</option>
-          <option value="ID Cards">ID Cards</option>
-          <option value="Keys">Keys</option>
-          <option value="Bags">Bags</option>
-          <option value="Other">Other</option>
+          <option value="Electronics">📱 Electronics</option>
+          <option value="Clothing">👕 Clothing</option>
+          <option value="Books">📚 Books</option>
+          <option value="ID Cards">🪪 ID Cards</option>
+          <option value="Keys">🔑 Keys</option>
+          <option value="Bags">🎒 Bags</option>
+          <option value="Other">📦 Other</option>
         </select>
         <select id="filterType">
           <option value="">All Items</option>
-          <option value="lost">Lost Items</option>
-          <option value="found">Found Items</option>
+          <option value="lost">📌 Lost Items</option>
+          <option value="found">✅ Found Items</option>
         </select>
       </div>
-      <div id="itemsList">
-        <p style="color: #777; text-align: center;">No items reported yet. Be the first to report!</p>
+      <div id="itemsList" class="items-grid">
+        <div class="empty-state">
+          <div class="empty-state-icon">🔍</div>
+          <h3>No items yet</h3>
+          <p>Be the first to report a lost or found item!</p>
+        </div>
       </div>
     </div>
   </div>
 
   <script>
-    // Check login
+    const API_URL = 'http://localhost:3000';
     const token = sessionStorage.getItem('authToken');
     if (!token) {
       window.location.href = '../index.html';
     }
 
-    // Logout
     document.getElementById('logoutBtn').addEventListener('click', function(e) {
       e.preventDefault();
       sessionStorage.removeItem('authToken');
       window.location.href = '../index.html';
     });
 
-    // Sample data for demo
     let items = JSON.parse(localStorage.getItem('lostFoundItems')) || [];
 
     function displayItems() {
@@ -126,31 +273,56 @@
       const container = document.getElementById('itemsList');
       
       if (filtered.length === 0) {
-        container.innerHTML = '<p style="color: #777; text-align: center;">No items found.</p>';
+        container.innerHTML = `
+          <div class="empty-state" style="grid-column: 1/-1;">
+            <div class="empty-state-icon">🔍</div>
+            <h3>No items found</h3>
+            <p>Try adjusting your search or filter settings</p>
+          </div>
+        `;
         return;
       }
       
       container.innerHTML = filtered.map(item => `
-        <div class="item-card">
-          <span class="badge ${item.type === 'lost' ? 'badge-lost' : 'badge-found'}">
-            ${item.type === 'lost' ? '🔴 LOST' : '🟢 FOUND'}
-          </span>
-          <h3>${item.title}</h3>
-          <p><strong>Category:</strong> ${item.category}</p>
-          <p><strong>Location:</strong> ${item.location}</p>
-          <p>${item.description.substring(0, 100)}...</p>
-          <p style="font-size: 12px; color: #999; margin-top: 10px;">
-            Posted: ${new Date(item.date).toLocaleDateString()}
-          </p>
-          <button onclick="claimItem('${item.id}')" class="btn btn-secondary" style="margin-top: 10px;">
-            ${item.type === 'found' ? 'Claim This Item' : 'I Have Info'}
-          </button>
+        <div class="item-card-modern">
+          <div class="item-header">
+            <span class="badge-modern ${item.type === 'lost' ? 'badge-lost-modern' : 'badge-found-modern'}">
+              ${item.type === 'lost' ? '🔴 LOST' : '🟢 FOUND'}
+            </span>
+            <span class="item-category">${item.category}</span>
+          </div>
+          <div class="item-body">
+            <div class="item-title">${escapeHtml(item.title)}</div>
+            <div class="item-detail">
+              <span class="item-detail-icon">📍</span>
+              <span>${escapeHtml(item.location)}</span>
+            </div>
+            <div class="item-description">
+              ${escapeHtml(item.description.length > 120 ? item.description.substring(0, 120) + '...' : item.description)}
+            </div>
+          </div>
+          <div class="item-footer">
+            <span class="item-date">📅 ${new Date(item.date).toLocaleDateString()}</span>
+            <button onclick="claimItem('${item.id}')" class="btn-claim">
+              ${item.type === 'found' ? '💰 Claim Item' : 'ℹ️ I Have Info'}
+            </button>
+          </div>
         </div>
       `).join('');
     }
 
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+      });
+    }
+
     function claimItem(id) {
-      alert('Claim functionality will be implemented when backend is ready.\n\nThe owner will be notified.');
+      alert('⚠️ Claim functionality will be implemented when the backend is ready.\n\nThe item owner will be notified.');
     }
 
     document.getElementById('reportForm').addEventListener('submit', function(e) {
@@ -172,7 +344,7 @@
       
       document.getElementById('reportForm').reset();
       displayItems();
-      alert('Item reported successfully!');
+      alert('✅ Item reported successfully!');
     });
 
     document.getElementById('searchInput').addEventListener('input', displayItems);

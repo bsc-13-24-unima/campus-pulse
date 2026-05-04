@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -29,7 +30,9 @@
   </div>
 
   <script>
-    // Check login
+    const API_URL = 'http://localhost:3000';
+
+    // Check if user is logged in
     const token = sessionStorage.getItem('authToken');
     if (!token) {
       window.location.href = '../index.html';
@@ -42,53 +45,51 @@
       window.location.href = '../index.html';
     });
 
-    // Sample announcements for demo
-    let announcements = [
-      {
-        id: 1,
-        title: "📚 Library Extended Hours",
-        content: "The university library will remain open until 10 PM during exam week (May 10-20).",
-        date: "2026-04-23",
-        author: "Administration"
-      },
-      {
-        id: 2,
-        title: "🍽️ Canteen Special Menu Today",
-        content: "Today's special: Grilled Chicken with Rice - Only 2500 MWK! Available until 3 PM.",
-        date: "2026-04-23",
-        author: "Canteen Staff"
-      },
-      {
-        id: 3,
-        title: "🔧 Maintenance Notice",
-        content: "The Science Block will have power maintenance on Saturday, April 25th from 8 AM to 12 PM.",
-        date: "2026-04-22",
-        author: "Facilities"
-      },
-      {
-        id: 4,
-        title: "🎓 Graduation Ceremony",
-        content: "The 2026 Graduation Ceremony will be held on June 15th. Caps and gowns available for pickup from May 1st.",
-        date: "2026-04-21",
-        author: "Academic Office"
-      }
-    ];
-
-    function displayAnnouncements() {
+    // Load announcements from backend API
+    async function loadAnnouncements() {
       const container = document.getElementById('announcementsList');
+      container.innerHTML = '<p>Loading announcements...</p>';
       
+      try {
+        const response = await fetch(`${API_URL}/announcements`, {
+          headers: {
+            'Authorization': 'Bearer ' + token
+          }
+        });
+
+        if (response.ok) {
+          const announcements = await response.json();
+          displayAnnouncements(announcements);
+        } else {
+          container.innerHTML = '<p>Failed to load announcements. Please try again later.</p>';
+        }
+      } catch (error) {
+        console.error('Error loading announcements:', error);
+        container.innerHTML = '<p>Error loading announcements. Make sure the backend is running.</p>';
+      }
+    }
+
+    function displayAnnouncements(announcements) {
+      const container = document.getElementById('announcementsList');
+
+      if (!announcements || announcements.length === 0) {
+        container.innerHTML = '<p>No announcements yet.</p>';
+        return;
+      }
+
       container.innerHTML = announcements.map(announcement => `
         <div class="announcement-card">
-          <h3>${announcement.title}</h3>
-          <p>${announcement.content}</p>
+          <h3>${announcement.title || 'Untitled'}</h3>
+          <p>${announcement.content || 'No content'}</p>
           <div class="announcement-meta">
-            Posted by ${announcement.author} on ${new Date(announcement.date).toLocaleDateString()}
+            Posted on ${new Date(announcement.createdAt || announcement.created_at).toLocaleDateString()}
           </div>
         </div>
       `).join('');
     }
 
-    displayAnnouncements();
+    // Load announcements when page loads
+    loadAnnouncements();
   </script>
 </body>
 </html>

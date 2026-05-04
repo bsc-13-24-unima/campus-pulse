@@ -76,6 +76,9 @@
   </div>
 
   <script>
+    const API_URL = 'http://localhost:3000';
+    const token = sessionStorage.getItem('authToken');
+
     // Check admin access
     const userRole = sessionStorage.getItem('userRole');
     if (!userRole || userRole !== 'admin') {
@@ -107,109 +110,142 @@
       }
     }
 
-    function loadAnnouncements() {
-      const announcements = JSON.parse(localStorage.getItem('adminAnnouncements')) || [];
+    async function loadAnnouncements() {
       const container = document.getElementById('adminAnnouncementsList');
+      container.innerHTML = '<p>Loading announcements...</p>';
       
-      if (announcements.length === 0) {
-        container.innerHTML = '<p>No announcements yet.</p>';
-        return;
+      try {
+        const response = await fetch(`${API_URL}/announcements`, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        if (response.ok) {
+          const announcements = await response.json();
+          if (announcements.length === 0) {
+            container.innerHTML = '<p>No announcements yet.</p>';
+            return;
+          }
+          container.innerHTML = announcements.map(ann => `
+            <div class="announcement-card">
+              <h3>${ann.title}</h3>
+              <p>${ann.content}</p>
+              <button onclick="deleteAnnouncement(${ann.announcementId})" class="btn btn-danger" style="margin-top: 10px;">Delete</button>
+            </div>
+          `).join('');
+        } else {
+          container.innerHTML = '<p>Failed to load announcements.</p>';
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        container.innerHTML = '<p>Error loading announcements.</p>';
       }
-      
-      container.innerHTML = announcements.map((ann, index) => `
-        <div class="announcement-card">
-          <h3>${ann.title}</h3>
-          <p>${ann.content}</p>
-          <button onclick="deleteAnnouncement(${index})" class="btn btn-danger" style="margin-top: 10px;">Delete</button>
-        </div>
-      `).join('');
     }
 
-    function deleteAnnouncement(index) {
-      let announcements = JSON.parse(localStorage.getItem('adminAnnouncements')) || [];
-      announcements.splice(index, 1);
-      localStorage.setItem('adminAnnouncements', JSON.stringify(announcements));
-      loadAnnouncements();
-    }
-
-    function loadUsers() {
-      // Demo users
-      const users = [
-        { email: 'admin@unima.ac.mw', role: 'admin', registered: '2026-04-01' },
-        { email: 'student1@unima.ac.mw', role: 'student', registered: '2026-04-02' },
-        { email: 'student2@unima.ac.mw', role: 'student', registered: '2026-04-03' }
-      ];
-      
-      const container = document.getElementById('usersList');
-      container.innerHTML = `
-        <table>
-          <thead>
-            <tr><th>Email</th><th>Role</th><th>Registered</th><th>Actions</th></tr>
-          </thead>
-          <tbody>
-            ${users.map(user => `
-              <tr>
-                <td>${user.email}</td>
-                <td>${user.role}</td>
-                <td>${user.registered}</td>
-                <td><button class="btn btn-danger" style="padding: 5px 10px;">Suspend</button></td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
-    }
-
-    function loadReports() {
-      const reports = JSON.parse(localStorage.getItem('lostFoundItems')) || [];
-      const container = document.getElementById('reportsList');
-      
-      if (reports.length === 0) {
-        container.innerHTML = '<p>No reports yet.</p>';
-        return;
+    async function deleteAnnouncement(id) {
+      try {
+        const response = await fetch(`${API_URL}/announcements/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (response.ok) {
+          alert('Announcement deleted!');
+          loadAnnouncements();
+        } else {
+          alert('Failed to delete announcement');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error deleting announcement');
       }
-      
-      container.innerHTML = reports.map((report, index) => `
-        <div class="item-card">
-          <h3>${report.title}</h3>
-          <p><strong>Type:</strong> ${report.type}</p>
-          <p><strong>Category:</strong> ${report.category}</p>
-          <p><strong>Location:</strong> ${report.location}</p>
-          <p>${report.description}</p>
-          <button onclick="deleteReport(${index})" class="btn btn-danger" style="margin-top: 10px;">Remove Report</button>
-        </div>
-      `).join('');
     }
 
-    function deleteReport(index) {
-      let reports = JSON.parse(localStorage.getItem('lostFoundItems')) || [];
-      reports.splice(index, 1);
-      localStorage.setItem('lostFoundItems', JSON.stringify(reports));
-      loadReports();
-    }
-
-    document.getElementById('announcementForm').addEventListener('submit', function(e) {
+    document.getElementById('announcementForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       
       const title = document.getElementById('annTitle').value;
       const content = document.getElementById('annContent').value;
       
-      let announcements = JSON.parse(localStorage.getItem('adminAnnouncements')) || [];
-      announcements.unshift({
-        title: title,
-        content: content,
-        date: new Date().toISOString(),
-        author: 'Administrator'
-      });
-      
-      localStorage.setItem('adminAnnouncements', JSON.stringify(announcements));
-      
-      document.getElementById('annTitle').value = '';
-      document.getElementById('annContent').value = '';
-      
-      loadAnnouncements();
-      alert('Announcement posted!');
+      try {
+        const response = await fetch(`${API_URL}/announcements`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ title, content, postedByUserId: 1 })
+        });
+
+        if (response.ok) {
+          alert('Announcement posted!');
+          document.getElementById('annTitle').value = '';
+          document.getElementById('annContent').value = '';
+          loadAnnouncements();
+        } else {
+          alert('Failed to post announcement');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error posting announcement');
+      }
     });
+
+    function loadUsers() {
+      const container = document.getElementById('usersList');
+      container.innerHTML = '<p>Loading users...</p>';
+      fetch(`${API_URL}/users`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+      .then(r => r.json())
+      .then(users => {
+        container.innerHTML = `
+          <table style="width:100%; border-collapse:collapse;">
+            <thead>
+              <tr style="background:#e8eaf6;"><th>Email</th><th>Role</th><th>Registered</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+              ${users.map(user => `
+                <tr>
+                  <td>${user.email}</td>
+                  <td>${user.role}</td>
+                  <td>${new Date(user.createdAt).toLocaleDateString()}</td>
+                  <td><button class="btn btn-danger" style="padding:5px 10px;">Suspend</button></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      })
+      .catch(err => {
+        container.innerHTML = '<p>Error loading users.</p>';
+      });
+    }
+
+    function loadReports() {
+      const container = document.getElementById('reportsList');
+      container.innerHTML = '<p>Loading reports...</p>';
+      fetch(`${API_URL}/lost-found`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+      .then(r => r.json())
+      .then(reports => {
+        if (reports.length === 0) {
+          container.innerHTML = '<p>No reports yet.</p>';
+          return;
+        }
+        container.innerHTML = reports.map(report => `
+          <div class="item-card">
+            <h3>${report.title}</h3>
+            <p><strong>Type:</strong> ${report.itemType}</p>
+            <p><strong>Category:</strong> ${report.category}</p>
+            <p><strong>Location:</strong> ${report.locationInfo}</p>
+            <p>${report.description}</p>
+          </div>
+        `).join('');
+      })
+      .catch(err => {
+        container.innerHTML = '<p>Error loading reports.</p>';
+      });
+    }
   </script>
 </body>
 </html>
