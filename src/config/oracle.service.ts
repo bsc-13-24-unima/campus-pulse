@@ -17,8 +17,8 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
       const host = this.configService.get<string>('DB_HOST');
       const port = this.configService.get<string>('DB_PORT');
       const sid = this.configService.get<string>('DB_SID');
-      const user = this.configService.get<string>('DB_USER');
-      const password = this.configService.get<string>('DB_PASSWORD');
+      const user = 'C##CAMPUS_PULSE_USER';
+      const password = 'zaithwa28';
 
       console.log('🔍 Debug - Config values:');
       console.log(`  DB_HOST: ${host}`);
