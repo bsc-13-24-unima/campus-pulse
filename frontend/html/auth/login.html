@@ -23,7 +23,7 @@
           <input type="password" id="password" placeholder="Enter your password" required>
         </div>
         
-        <button type="submit" class="btn btn-primary">Login</button>
+        <button type="submit" class="btn btn-primary" id="submitBtn">Login</button>
         
         <div id="errorMsg" class="error-message"></div>
       </form>
@@ -31,39 +31,58 @@
       <div class="auth-link">
         Don't have an account? <a href="register.html">Register</a>
       </div>
+      <div class="auth-link">
+        <a href="forgot-password.html">Forgot Password?</a>
+      </div>
     </div>
   </div>
   
   <script>
+    const API_URL = 'http://localhost:3000';
+
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
-      
       const errorDiv = document.getElementById('errorMsg');
-      
-      if (!email || !password) {
-        errorDiv.textContent = 'Please fill in all fields';
+      const submitBtn = document.getElementById('submitBtn');
+
+      errorDiv.style.display = 'none';
+      submitBtn.textContent = 'Logging in...';
+      submitBtn.disabled = true;
+
+      try {
+        const response = await fetch(`${API_URL}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Login failed');
+        }
+
+        sessionStorage.setItem('authToken', data.token);
+        sessionStorage.setItem('userEmail', data.user.email);
+        sessionStorage.setItem('userRole', data.user.role);
+        sessionStorage.setItem('userName', data.user.name);
+        sessionStorage.setItem('userId', data.user.id);
+
+        if (data.user.role === 'admin') {
+          window.location.href = '../admin/dashboard.html';
+        } else {
+          window.location.href = '../dashboard.html';
+        }
+
+      } catch (err) {
+        errorDiv.textContent = err.message;
         errorDiv.style.display = 'block';
-        return;
+        submitBtn.textContent = 'Login';
+        submitBtn.disabled = false;
       }
-      
-      // TODO: Connect to actual backend API
-      // For now, demo login - will be replaced when backend is ready
-      // This is a TEMPORARY solution for testing the frontend
-      
-      if (email.includes('admin')) {
-        sessionStorage.setItem('authToken', 'demo-admin-token');
-        sessionStorage.setItem('userEmail', email);
-        sessionStorage.setItem('userRole', 'admin');
-      } else {
-        sessionStorage.setItem('authToken', 'demo-student-token');
-        sessionStorage.setItem('userEmail', email);
-        sessionStorage.setItem('userRole', 'student');
-      }
-      
-      window.location.href = '../dashboard.html';
     });
   </script>
 </body>
