@@ -1,121 +1,231 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  ConflictException,
+  InternalServerErrorException,
+} from '@nestjs/common';
+
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource, Like } from 'typeorm';
+import * as bcrypt from 'bcrypt';
+
 import { LostFoundItem } from './entities/lost-found-item.entity';
-import { Claim } from './claims/claim.entity';
+import { VerificationQuestion } from './entities/verification-question.entity';
+import { Claim } from './entities/claim.entity';
+import { ClaimAnswer } from './entities/claim-answer.entity';
+import { ItemStatusHistory } from './entities/item-status-history.entity';
+
+import { CreateItemDto } from './dto/create-item.dto';
+import { SubmitClaimDto } from './dto/submit-claim.dto';
+import { ReviewClaimDto } from './dto/review-claim.dto';
 
 @Injectable()
 export class LostFoundService {
   constructor(
     @InjectRepository(LostFoundItem)
-    private readonly lostFoundRepository: Repository<LostFoundItem>,
+    private itemRepo: Repository<LostFoundItem>,
+
+    @InjectRepository(VerificationQuestion)
+    private questionRepo: Repository<VerificationQuestion>,
 
     @InjectRepository(Claim)
-    private readonly claimsRepository: Repository<Claim>,
+    private claimRepo: Repository<Claim>,
+
+    @InjectRepository(ClaimAnswer)
+    private answerRepo: Repository<ClaimAnswer>,
+
+    @InjectRepository(ItemStatusHistory)
+    private historyRepo: Repository<ItemStatusHistory>,
+
+    private dataSource: DataSource,
   ) {}
 
-  async create(data: any) {
-    const item = this.lostFoundRepository.create({
-      title: data.title,
-      description: data.description,
-      category: data.category,
-      itemType: data.itemType,
-      locationInfo: data.locationInfo,
-      status: data.status || 'active',
-      postedByUserId: data.postedByUserId,
-      photoUrl: data.photoUrl,
-      verificationQuestion: data.verificationQuestion,
-      verificationAnswerHash: data.verificationAnswerHash,
-    });
+  // =========================
+  // CREATE ITEM
+  // =========================
+  async createItem(dto: CreateItemDto, userId: number) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    return this.lostFoundRepository.save(item);
-  }
+    try {
+      const item = this.itemRepo.create({
+        title: dto.title,
+        description: dto.description,
+        category: dto.category,
+        itemType: dto.itemType,
+        locationInfo: dto.locationInfo,
+        photoUrl: dto.photoUrl,
+        status: 'active',
+        reportedByUserId: userId,
+      });
 
-  async getAll() {
-    return this.lostFoundRepository.find({
-      where: { status: 'active' },
-    });
-  }
+      const savedItem = await queryRunner.manager.save(item);
 
-  async getOne(id: number) {
-    const item = await this.lostFoundRepository.findOne({
-      where: { itemId: id },
-    });
+      for (const q of dto.verificationQuestions) {
+        const hash = await bcrypt.hash(q.answer.trim().toLowerCase(), 10);
 
-    if (!item) {
-      throw new NotFoundException('Lost or found item not found');
+        const question = this.questionRepo.create({
+          itemId: savedItem.itemId,
+          questionText: q.questionText,
+          answerHash: hash,
+        });
+
+        await queryRunner.manager.save(question);
+      }
+
+      await queryRunner.manager.save(
+        this.historyRepo.create({
+          itemId: savedItem.itemId,
+          previousStatus: null,
+          newStatus: 'active',
+          changedBy: userId,
+        }),
+      );
+
+      await queryRunner.commitTransaction();
+
+      return {
+        message: 'Item created successfully',
+        itemId: savedItem.itemId,
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.error(error);
+      throw new InternalServerErrorException('Failed to create item');
+    } finally {
+      await queryRunner.release();
     }
+  }
+
+  // =========================
+  // GET ALL ITEMS
+  // =========================
+  async getAllItems(filters: {
+    category?: string;
+    itemType?: string;
+    keyword?: string;
+  }) {
+    const where: any = { status: 'active' };
+
+    if (filters.category) where.category = filters.category;
+    if (filters.itemType) where.itemType = filters.itemType;
+
+    if (filters.keyword) {
+      return this.itemRepo.find({
+        where: [
+          { ...where, title: Like(`%${filters.keyword}%`) },
+          { ...where, description: Like(`%${filters.keyword}%`) },
+        ],
+        order: { dateReported: 'DESC' },
+      });
+    }
+
+    return this.itemRepo.find({
+      where,
+      order: { dateReported: 'DESC' },
+    });
+  }
+
+  // =========================
+  // GET ITEM
+  // =========================
+  async getItemById(itemId: number, userId: number) {
+    const item = await this.itemRepo.findOne({
+      where: { itemId },
+      relations: ['verificationQuestions'],
+    });
+
+    if (!item) throw new NotFoundException('Item not found');
 
     return item;
   }
 
-  async update(id: number, data: any) {
-    const item = await this.getOne(id);
+  // =========================
+  // SUBMIT CLAIM
+  // =========================
+  async submitClaim(itemId: number, dto: SubmitClaimDto, userId: number) {
+    const item = await this.itemRepo.findOne({
+      where: { itemId },
+      relations: ['verificationQuestions'],
+    });
 
-    item.title = data.title ?? item.title;
-    item.description = data.description ?? item.description;
-    item.category = data.category ?? item.category;
-    item.itemType = data.itemType ?? item.itemType;
-    item.locationInfo = data.locationInfo ?? item.locationInfo;
-    item.status = data.status ?? item.status;
-    item.photoUrl = data.photoUrl ?? item.photoUrl;
-    item.verificationQuestion = data.verificationQuestion ?? item.verificationQuestion;
-    item.verificationAnswerHash = data.verificationAnswerHash ?? item.verificationAnswerHash;
+    if (!item) throw new NotFoundException('Item not found');
 
-    return this.lostFoundRepository.save(item);
-  }
+    if (item.reportedByUserId === userId) {
+      throw new ForbiddenException('You cannot claim your own item');
+    }
 
-  async delete(id: number) {
-    const item = await this.getOne(id);
+    const existing = await this.claimRepo.findOne({
+      where: { itemId, claimantUserId: userId },
+    });
 
-    item.status = 'archived';
-    item.archivedAt = new Date();
+    if (existing) {
+      throw new ConflictException('Already claimed');
+    }
 
-    await this.lostFoundRepository.save(item);
+    const claim = this.claimRepo.create({
+      itemId,
+      claimantUserId: userId,
+      claimStatus: 'pending',
+    });
+
+    const savedClaim = await this.claimRepo.save(claim);
 
     return {
-      message: 'Lost or found item archived successfully',
-      itemId: id,
+      message: 'Claim submitted',
+      claimId: savedClaim.claimId,
     };
   }
 
-  async createClaim(itemId: number, data: any) {
-    await this.getOne(itemId);
+  // =========================
+  // 🔥 NEW: GET CLAIMS FOR ITEM
+  // =========================
+  async getClaimsForItem(itemId: number) {
+    return this.claimRepo.find({
+      where: { itemId },
+    });
+  }
 
-    const claim = this.claimsRepository.create({
-      itemId,
-      claimedByUserId: data.claimedByUserId,
-      claimStatus: 'pending',
-      reviewerNotes: data.reviewerNotes,
+  // =========================
+  // REVIEW CLAIM
+  // =========================
+  async reviewClaim(
+    claimId: number,
+    dto: ReviewClaimDto,
+    adminId: number,
+  ) {
+    const claim = await this.claimRepo.findOne({
+      where: { claimId },
     });
 
-    return this.claimsRepository.save(claim);
-  }
+    if (!claim) throw new NotFoundException('Claim not found');
 
-  async getAllClaims() {
-    return this.claimsRepository.find();
-  }
-
-  async getOneClaim(id: number) {
-    const claim = await this.claimsRepository.findOne({
-      where: { claimId: id },
-    });
-
-    if (!claim) {
-      throw new NotFoundException('Claim not found');
-    }
-
-    return claim;
-  }
-
-  async reviewClaim(id: number, data: any) {
-    const claim = await this.getOneClaim(id);
-
-    claim.claimStatus = data.claimStatus;
-    claim.reviewerNotes = data.reviewerNotes ?? claim.reviewerNotes;
-    claim.reviewedByUserId = data.reviewedByUserId;
+    claim.claimStatus = dto.decision;
+    claim.reviewedByUserId = adminId;
     claim.reviewedAt = new Date();
 
-    return this.claimsRepository.save(claim);
+    await this.claimRepo.save(claim);
+
+    return { message: 'Review completed' };
+  }
+
+  // =========================
+  // DELETE ITEM
+  // =========================
+  async deleteItem(itemId: number, userId: number, role: string) {
+    const item = await this.itemRepo.findOne({ where: { itemId } });
+
+    if (!item) throw new NotFoundException('Item not found');
+
+    if (item.reportedByUserId !== userId && role !== 'admin') {
+      throw new ForbiddenException('Not allowed');
+    }
+
+    await this.itemRepo.remove(item);
+
+    return { message: 'Item deleted successfully' };
   }
 }

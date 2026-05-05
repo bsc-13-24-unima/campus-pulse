@@ -1,43 +1,60 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  CreateDateColumn,
+} from 'typeorm';
 
-@Entity('LOST_FOUND_ITEMS')
+import { VerificationQuestion } from './verification-question.entity';
+import { Claim } from './claim.entity';
+import { ItemStatusHistory } from './item-status-history.entity';
+
+@Entity('lost_found_items')
 export class LostFoundItem {
-  @PrimaryGeneratedColumn({ name: 'ITEM_ID' })
+  @PrimaryGeneratedColumn()
   itemId: number;
 
-  @Column({ name: 'TITLE', type: 'varchar2', length: 255 })
+  @Column()
   title: string;
 
-  @Column({ name: 'DESCRIPTION', type: 'clob' })
+  // FIXED FOR ORACLE
+  @Column({ type: 'clob' })
   description: string;
 
-  @Column({ name: 'CATEGORY', type: 'varchar2', length: 100 })
+  @Column()
   category: string;
 
-  @Column({ name: 'ITEM_TYPE', type: 'varchar2', length: 10 })
+  @Column()
   itemType: string;
 
-  @Column({ name: 'LOCATION_INFO', type: 'varchar2', length: 255, nullable: true })
+  @Column()
   locationInfo: string;
 
-  @Column({ name: 'STATUS', type: 'varchar2', length: 50, default: 'active' })
-  status: string;
-
-  @Column({ name: 'POSTED_BY_USER_ID', type: 'number' })
-  postedByUserId: number;
-
-  @Column({ name: 'PHOTO_URL', type: 'varchar2', length: 500, nullable: true })
+  @Column({ nullable: true })
   photoUrl: string;
 
-  @Column({ name: 'VERIFICATION_QUESTION', type: 'varchar2', length: 500 })
-  verificationQuestion: string;
+  @Column({ default: 'active' })
+  status: string;
 
-  @Column({ name: 'VERIFICATION_ANSWER_HASH', type: 'varchar2', length: 255 })
-  verificationAnswerHash: string;
+  @Column()
+  reportedByUserId: number;
 
-  @Column({ name: 'DATE_REPORTED', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ nullable: true })
+  contactRevealedTo: number;
+
+  @CreateDateColumn()
   dateReported: Date;
 
-  @Column({ name: 'ARCHIVED_AT', type: 'timestamp', nullable: true })
-  archivedAt: Date;
+  @Column({ nullable: true })
+  dateResolved: Date;
+
+  @OneToMany(() => VerificationQuestion, q => q.item)
+  verificationQuestions: VerificationQuestion[];
+
+  @OneToMany(() => Claim, c => c.item)
+  claims: Claim[];
+
+  @OneToMany(() => ItemStatusHistory, h => h.item)
+  statusHistory: ItemStatusHistory[];
 }

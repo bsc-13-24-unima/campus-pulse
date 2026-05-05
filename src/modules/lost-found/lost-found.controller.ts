@@ -1,54 +1,84 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  Query,
+} from '@nestjs/common';
+
 import { LostFoundService } from './lost-found.service';
+
+import { CreateItemDto } from './dto/create-item.dto';
+import { SubmitClaimDto } from './dto/submit-claim.dto';
+import { ReviewClaimDto } from './dto/review-claim.dto';
 
 @Controller('lost-found')
 export class LostFoundController {
-  constructor(private readonly lostFoundService: LostFoundService) {}
+  constructor(private readonly service: LostFoundService) {}
 
-  // ===== ITEMS =====
+  // =====================================================
+  // 1. CREATE ITEM
+  // =====================================================
   @Post()
-  createItem(@Body() body: any) {
-    return this.lostFoundService.create(body);
+  createItem(@Body() body: CreateItemDto) {
+    const fakeUserId = 1;
+    return this.service.createItem(body, fakeUserId);
   }
 
+  // =====================================================
+  // 2. GET ALL ITEMS
+  // =====================================================
   @Get()
-  getAllItems() {
-    return this.lostFoundService.getAll();
+  getAll(
+    @Query('category') category?: string,
+    @Query('itemType') itemType?: string,
+    @Query('keyword') keyword?: string,
+  ) {
+    return this.service.getAllItems({ category, itemType, keyword });
   }
 
+  // =====================================================
+  // 3. GET ITEM BY ID
+  // =====================================================
   @Get(':id')
-  getOneItem(@Param('id') id: string) {
-    return this.lostFoundService.getOne(Number(id));
+  getOne(@Param('id') id: string) {
+    const fakeUserId = 1;
+    return this.service.getItemById(Number(id), fakeUserId);
   }
 
-  @Patch(':id')
-  updateItem(@Param('id') id: string, @Body() body: any) {
-    return this.lostFoundService.update(Number(id), body);
-  }
-
-  @Delete(':id')
-  deleteItem(@Param('id') id: string) {
-    return this.lostFoundService.delete(Number(id));
-  }
-
-  // ===== CLAIMS =====
+  // =====================================================
+  // 4. SUBMIT CLAIM
+  // =====================================================
   @Post(':id/claim')
-  createClaim(@Param('id') id: string, @Body() body: any) {
-    return this.lostFoundService.createClaim(Number(id), body);
+  submitClaim(
+    @Param('id') id: string,
+    @Body() body: SubmitClaimDto,
+  ) {
+    const fakeUserId = 2;
+    return this.service.submitClaim(Number(id), body, fakeUserId);
   }
 
-  @Get('claims/all')
-  getAllClaims() {
-    return this.lostFoundService.getAllClaims();
+  // =====================================================
+  // 5. ADMIN REVIEW
+  // =====================================================
+  @Post('claim/:claimId/review')
+  review(
+    @Param('claimId') claimId: string,
+    @Body() body: ReviewClaimDto,
+  ) {
+    const adminId = 999;
+    return this.service.reviewClaim(Number(claimId), body, adminId);
   }
 
-  @Get('claims/:id')
-  getOneClaim(@Param('id') id: string) {
-    return this.lostFoundService.getOneClaim(Number(id));
-  }
-
-  @Patch('claims/:id/review')
-  reviewClaim(@Param('id') id: string, @Body() body: any) {
-    return this.lostFoundService.reviewClaim(Number(id), body);
+  // =====================================================
+  // 6. DELETE ITEM
+  // =====================================================
+  @Delete(':id')
+  delete(@Param('id') id: string) {
+    const fakeUserId = 1;
+    const role = 'admin';
+    return this.service.deleteItem(Number(id), fakeUserId, role);
   }
 }
