@@ -16,23 +16,23 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
       // Read config values with debug
       const host = this.configService.get<string>('DB_HOST');
       const port = this.configService.get<string>('DB_PORT');
-      const sid = this.configService.get<string>('DB_SID');
+      const serviceName = this.configService.get<string>('DB_SERVICE_NAME');
       const user = this.configService.get<string>('DB_USER');
       const password = this.configService.get<string>('DB_PASSWORD');
 
       console.log('🔍 Debug - Config values:');
       console.log(`  DB_HOST: ${host}`);
       console.log(`  DB_PORT: ${port}`);
-      console.log(`  DB_SID: ${sid}`);
+      console.log(`  DB_SERVICE_NAME: ${serviceName}`);
       console.log(`  DB_USER: ${user}`);
       console.log(`  DB_PASSWORD: ${password ? '***' : 'NOT SET'}`);
 
-      if (!host || !port || !sid) {
+      if (!host || !port || !serviceName) {
         console.error('❌ Missing database configuration. Please check your .env file');
         return;
       }
 
-      const connectString = `${host}:${port}/${sid}`;
+      const connectString = `${host}:${port}/${serviceName}`;
       console.log(`📡 Connection string: ${connectString}`);
 
       this.pool = await oracledb.createPool({
