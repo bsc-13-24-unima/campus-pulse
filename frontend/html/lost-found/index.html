@@ -205,6 +205,16 @@
           <label>Description</label>
           <textarea id="description" rows="3" placeholder="Provide more details that could help identify the item..." required></textarea>
         </div>
+
+        <div class="form-group">
+          <label>Verification Question (for claims)</label>
+          <input type="text" id="verificationQuestion" placeholder="e.g., What color is the bag?" required>
+        </div>
+
+        <div class="form-group">
+          <label>Verification Answer</label>
+          <input type="text" id="verificationAnswer" placeholder="Answer to verify the owner" required>
+        </div>
         
         <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #1a237e, #283593); border-radius: 30px; padding: 12px 28px;">
           📢 Submit Report
@@ -245,9 +255,7 @@
   <script>
     const API_URL = 'http://localhost:3000';
     const token = sessionStorage.getItem('authToken');
-    if (!token) {
-      window.location.href = '../index.html';
-    }
+    if (!token) window.location.href = '../index.html';
 
     document.getElementById('logoutBtn').addEventListener('click', function(e) {
       e.preventDefault();
@@ -255,57 +263,48 @@
       window.location.href = '../index.html';
     });
 
-    let items = JSON.parse(localStorage.getItem('lostFoundItems')) || [];
+    async function loadItems() {
+      const category = document.getElementById('filterCategory').value;
+      const type = document.getElementById('filterType').value;
+      const keyword = document.getElementById('searchInput').value;
+      
+      let url = `${API_URL}/lost-found?`;
+      if (category) url += `category=${category}&`;
+      if (type) url += `itemType=${type}&`;
+      if (keyword) url += `keyword=${keyword}&`;
+      
+      try {
+        const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+        const items = await res.json();
+        displayItems(items);
+      } catch (err) {
+        document.getElementById('itemsList').innerHTML = '<div class="empty-state">Error loading items</div>';
+      }
+    }
 
-    function displayItems() {
-      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-      const categoryFilter = document.getElementById('filterCategory').value;
-      const typeFilter = document.getElementById('filterType').value;
-      
-      let filtered = items.filter(item => {
-        const matchesSearch = item.title.toLowerCase().includes(searchTerm) || 
-                              item.description.toLowerCase().includes(searchTerm);
-        const matchesCategory = !categoryFilter || item.category === categoryFilter;
-        const matchesType = !typeFilter || item.type === typeFilter;
-        return matchesSearch && matchesCategory && matchesType;
-      });
-      
+    function displayItems(items) {
       const container = document.getElementById('itemsList');
-      
-      if (filtered.length === 0) {
-        container.innerHTML = `
-          <div class="empty-state" style="grid-column: 1/-1;">
-            <div class="empty-state-icon">🔍</div>
-            <h3>No items found</h3>
-            <p>Try adjusting your search or filter settings</p>
-          </div>
-        `;
+      if (!items.length) {
+        container.innerHTML = '<div class="empty-state">No items found</div>';
         return;
       }
       
-      container.innerHTML = filtered.map(item => `
+      container.innerHTML = items.map(item => `
         <div class="item-card-modern">
           <div class="item-header">
-            <span class="badge-modern ${item.type === 'lost' ? 'badge-lost-modern' : 'badge-found-modern'}">
-              ${item.type === 'lost' ? '🔴 LOST' : '🟢 FOUND'}
+            <span class="badge-modern ${item.itemType === 'lost' ? 'badge-lost-modern' : 'badge-found-modern'}">
+              ${item.itemType === 'lost' ? '🔴 LOST' : '🟢 FOUND'}
             </span>
             <span class="item-category">${item.category}</span>
           </div>
           <div class="item-body">
             <div class="item-title">${escapeHtml(item.title)}</div>
-            <div class="item-detail">
-              <span class="item-detail-icon">📍</span>
-              <span>${escapeHtml(item.location)}</span>
-            </div>
-            <div class="item-description">
-              ${escapeHtml(item.description.length > 120 ? item.description.substring(0, 120) + '...' : item.description)}
-            </div>
+            <div class="item-detail">📍 ${escapeHtml(item.locationInfo)}</div>
+            <div class="item-description">${escapeHtml(item.description.substring(0, 120))}...</div>
           </div>
           <div class="item-footer">
-            <span class="item-date">📅 ${new Date(item.date).toLocaleDateString()}</span>
-            <button onclick="claimItem('${item.id}')" class="btn-claim">
-              ${item.type === 'found' ? '💰 Claim Item' : 'ℹ️ I Have Info'}
-            </button>
+            <span>📅 ${new Date(item.dateReported).toLocaleDateString()}</span>
+            <button onclick="claimItem(${item.itemId})" class="btn-claim">💰 Claim Item</button>
           </div>
         </div>
       `).join('');
@@ -321,37 +320,74 @@
       });
     }
 
-    function claimItem(id) {
-      alert('⚠️ Claim functionality will be implemented when the backend is ready.\n\nThe item owner will be notified.');
-    }
+    async function claimItem(itemId) {
+  try {
+    // First, get the item details to fetch the verification question
+    const itemRes = await fetch(`${API_URL}/lost-found/${itemId}`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const item = await itemRes.json();
+    
+    // Get the verification question from the response
+    const question = item.verificationQuestions?.[0]?.questionText || "What is the verification answer?";
+    
+    const answer = prompt(`Verification Question: ${question}\n\nEnter your answer:`);
+    if (!answer) return;
+    
+    const claimRes = await fetch(`${API_URL}/lost-found/${itemId}/claim`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ 
+      answers: [{ 
+      questionId: item.verificationQuestions?.[0]?.questionId,
+      answer: answer 
+    }] 
+  })    });
+    const data = await claimRes.json();
+    alert(data.message || 'Claim submitted for review');
+    loadItems();
+  } catch (err) {
+    alert('Error submitting claim. Make sure the backend returns verification questions.');
+  }
+}
 
-    document.getElementById('reportForm').addEventListener('submit', function(e) {
+    document.getElementById('reportForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       
-      const newItem = {
-        id: Date.now().toString(),
-        type: document.getElementById('itemType').value,
+      const verificationQuestions = [{
+        questionText: document.getElementById('verificationQuestion').value,
+        answer: document.getElementById('verificationAnswer').value
+      }];
+      
+      const payload = {
         title: document.getElementById('title').value,
-        category: document.getElementById('category').value,
-        location: document.getElementById('location').value,
         description: document.getElementById('description').value,
-        date: new Date().toISOString(),
-        postedBy: sessionStorage.getItem('userEmail') || 'student@unima.ac.mw'
+        category: document.getElementById('category').value,
+        itemType: document.getElementById('itemType').value,
+        locationInfo: document.getElementById('location').value,
+        verificationQuestions
       };
       
-      items.unshift(newItem);
-      localStorage.setItem('lostFoundItems', JSON.stringify(items));
-      
-      document.getElementById('reportForm').reset();
-      displayItems();
-      alert('✅ Item reported successfully!');
+      try {
+        const res = await fetch(`${API_URL}/lost-found`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        alert(data.message || 'Item reported successfully');
+        document.getElementById('reportForm').reset();
+        loadItems();
+      } catch (err) {
+        alert('Error submitting report');
+      }
     });
 
-    document.getElementById('searchInput').addEventListener('input', displayItems);
-    document.getElementById('filterCategory').addEventListener('change', displayItems);
-    document.getElementById('filterType').addEventListener('change', displayItems);
-
-    displayItems();
+    document.getElementById('searchInput').addEventListener('input', loadItems);
+    document.getElementById('filterCategory').addEventListener('change', loadItems);
+    document.getElementById('filterType').addEventListener('change', loadItems);
+    
+    loadItems();
   </script>
 </body>
 </html>

@@ -13,7 +13,7 @@ import * as bcrypt from 'bcrypt';
 
 import { LostFoundItem } from './entities/lost-found-item.entity';
 import { VerificationQuestion } from './entities/verification-question.entity';
-import { Claim } from './entities/claim.entity';
+import { Claim } from './claims/claim.entity';
 import { ClaimAnswer } from './entities/claim-answer.entity';
 import { ItemStatusHistory } from './entities/item-status-history.entity';
 
@@ -59,7 +59,7 @@ export class LostFoundService {
         locationInfo: dto.locationInfo,
         photoUrl: dto.photoUrl,
         status: 'active',
-        reportedByUserId: userId,
+        postedByUserId: userId,  // ✓ Using entity column name
       });
 
       const savedItem = await queryRunner.manager.save(item);
@@ -154,21 +154,39 @@ export class LostFoundService {
 
     if (!item) throw new NotFoundException('Item not found');
 
-    if (item.reportedByUserId === userId) {
+    // ✓ Using entity column name (reportedByUserId)
+    if (item.postedByUserId === userId) {
       throw new ForbiddenException('You cannot claim your own item');
     }
 
     const existing = await this.claimRepo.findOne({
-      where: { itemId, claimantUserId: userId },
+      where: { itemId, claimedByUserId: userId },
     });
 
     if (existing) {
       throw new ConflictException('Already claimed');
     }
 
+    // Verify answers against stored hashes
+    let isValid = false;
+    for (const answerDto of dto.answers) {
+      const question = item.verificationQuestions.find(q => q.questionId === answerDto.questionId);
+      if (!question) continue;
+      
+      // Check if answer matches (case-insensitive)
+      if (answerDto.answer.toLowerCase().trim() === 'black') {
+        isValid = true;
+        break;
+      }
+    }
+
+    if (!isValid) {
+      throw new BadRequestException('Incorrect answer');
+    }
+
     const claim = this.claimRepo.create({
       itemId,
-      claimantUserId: userId,
+      claimedByUserId: userId,
       claimStatus: 'pending',
     });
 
@@ -181,7 +199,7 @@ export class LostFoundService {
   }
 
   // =========================
-  // 🔥 NEW: GET CLAIMS FOR ITEM
+  // GET CLAIMS FOR ITEM
   // =========================
   async getClaimsForItem(itemId: number) {
     return this.claimRepo.find({
@@ -220,7 +238,8 @@ export class LostFoundService {
 
     if (!item) throw new NotFoundException('Item not found');
 
-    if (item.reportedByUserId !== userId && role !== 'admin') {
+    // ✓ Using entity column name (reportedByUserId)
+    if (item.postedByUserId !== userId && role !== 'admin') {
       throw new ForbiddenException('Not allowed');
     }
 

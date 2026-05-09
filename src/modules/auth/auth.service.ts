@@ -48,7 +48,7 @@ export class AuthService {
     return {
       message: 'Account created successfully',
       token,
-      user: { id: userId, name, email, role: 'student' }
+    
     };
   }
 
@@ -81,12 +81,7 @@ export class AuthService {
     const token = this.jwtService.sign({ id: user.USER_ID, role: user.ROLE });
     return {
       token,
-      user: {
-        id: user.USER_ID,
-        name: user.FULL_NAME,
-        email: user.EMAIL,
-        role: user.ROLE
-      }
+     
     };
   }
 

@@ -6,7 +6,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 
-import { Claim } from './claim.entity';
+import { Claim } from '../claims/claim.entity';
 
 @Entity('claim_answers')
 export class ClaimAnswer {
@@ -25,9 +25,7 @@ export class ClaimAnswer {
   @Column()
   isCorrect: number;
 
-  @ManyToOne(() => Claim, claim => claim.claimId, {
-    onDelete: 'CASCADE',
-  })
-  @JoinColumn({ name: 'claimId' })
-  claim: Claim;
+ @ManyToOne(() => Claim, { onDelete: 'CASCADE' })
+@JoinColumn({ name: 'claimId' })
+claim: Claim;
 }

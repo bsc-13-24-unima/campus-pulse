@@ -56,7 +56,7 @@ export class LostFoundController {
     @Param('id') id: string,
     @Body() body: SubmitClaimDto,
   ) {
-    const fakeUserId = 2;
+    const fakeUserId = 1;
     return this.service.submitClaim(Number(id), body, fakeUserId);
   }
 
