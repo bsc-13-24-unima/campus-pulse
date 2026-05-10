@@ -1,12 +1,4 @@
-import {
-  IsString,
-  IsNotEmpty,
-  IsIn,
-  IsOptional,
-  IsArray,
-  ValidateNested,
-  ArrayMinSize,
-} from 'class-validator';
+import { IsString, IsNotEmpty, IsIn, IsOptional, IsArray, ValidateNested, ArrayMinSize } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class VerificationQuestionDto {
@@ -20,7 +12,6 @@ export class VerificationQuestionDto {
 }
 
 export class CreateItemDto {
-
   @IsString()
   @IsNotEmpty()
   title: string;

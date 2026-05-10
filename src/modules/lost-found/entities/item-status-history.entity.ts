@@ -1,12 +1,4 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  ManyToOne,
-  JoinColumn,
-  CreateDateColumn,
-} from 'typeorm';
-
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
 import { LostFoundItem } from './lost-found-item.entity';
 
 @Entity('item_status_history')
@@ -29,9 +21,7 @@ export class ItemStatusHistory {
   @CreateDateColumn()
   changedAt: Date;
 
-  @ManyToOne(() => LostFoundItem, item => item.statusHistory, {
-    onDelete: 'CASCADE',
-  })
+  @ManyToOne(() => LostFoundItem, item => item.statusHistory, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'itemId' })
   item: LostFoundItem;
 }

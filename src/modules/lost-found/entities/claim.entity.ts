@@ -1,38 +1,28 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { User } from '../../users/entities/user.entity';
-import { LostFoundItem } from './lost-found-item.entity';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
 
 @Entity('claims')
 export class Claim {
-  @PrimaryGeneratedColumn({ name: 'claim_id' })
+  @PrimaryGeneratedColumn()
   claimId: number;
 
-  @Column({ name: 'item_id' })
+  @Column()
   itemId: number;
 
-  @Column({ name: 'claimed_by_user_id' })
+  @Column()
   claimedByUserId: number;
 
-  @Column({ name: 'claim_status', length: 30, default: 'pending' })
+  @Column({ default: 'pending' })
   claimStatus: string;
 
-  @Column({ name: 'reviewer_notes', length: 500, nullable: true })
-  reviewerNotes: string;
-
-  @Column({ name: 'reviewed_by_user_id', nullable: true })
-  reviewedByUserId: number;
-
-  @CreateDateColumn({ name: 'submitted_at' })
+  @CreateDateColumn()
   submittedAt: Date;
 
-  @Column({ name: 'reviewed_at', type: 'date', nullable: true })
+  @Column({ nullable: true })
   reviewedAt: Date;
 
-  @ManyToOne(() => User)
-  @JoinColumn({ name: 'claimed_by_user_id' })
-  claimedBy: User;
+  @Column({ nullable: true })
+  reviewerNotes: string;
 
-  @ManyToOne(() => LostFoundItem)
-  @JoinColumn({ name: 'item_id' })
-  item: LostFoundItem;
+  @Column({ nullable: true })
+  reviewedByUserId: number;
 }

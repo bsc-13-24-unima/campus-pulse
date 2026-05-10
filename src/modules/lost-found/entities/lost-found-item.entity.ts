@@ -7,7 +7,6 @@ import {
 } from 'typeorm';
 
 import { VerificationQuestion } from './verification-question.entity';
-import { Claim } from '../claims/claim.entity';
 import { ItemStatusHistory } from './item-status-history.entity';
 
 @Entity('lost_found_items')
@@ -18,7 +17,6 @@ export class LostFoundItem {
   @Column()
   title: string;
 
-  // FIXED FOR ORACLE
   @Column({ type: 'clob' })
   description: string;
 
@@ -37,12 +35,6 @@ export class LostFoundItem {
   @Column({ default: 'active' })
   status: string;
 
-  @Column({ name: 'POSTED_BY_USER_ID' })
-  postedByUserId: number;
-
-  @Column({ nullable: true })
-  contactRevealedTo: number;
-
   @CreateDateColumn()
   dateReported: Date;
 
@@ -52,9 +44,9 @@ export class LostFoundItem {
   @OneToMany(() => VerificationQuestion, q => q.item)
   verificationQuestions: VerificationQuestion[];
 
-  //@OneToMany(() => Claim, c => c.item)
-  //claims: Claim[];
-
   @OneToMany(() => ItemStatusHistory, h => h.item)
   statusHistory: ItemStatusHistory[];
+
+  @Column()
+  postedByUserId: number;
 }

@@ -1,11 +1,4 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  ManyToOne,
-  JoinColumn,
-} from 'typeorm';
-
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { LostFoundItem } from './lost-found-item.entity';
 
 @Entity('verification_questions')
@@ -22,9 +15,7 @@ export class VerificationQuestion {
   @Column()
   answerHash: string;
 
-  @ManyToOne(() => LostFoundItem, item => item.verificationQuestions, {
-    onDelete: 'CASCADE',
-  })
+  @ManyToOne(() => LostFoundItem, item => item.verificationQuestions, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'itemId' })
   item: LostFoundItem;
 }
